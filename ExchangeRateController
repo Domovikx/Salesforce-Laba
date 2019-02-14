@@ -1,0 +1,141 @@
+/**
+ * Created by admin on 12/20/18.
+ */
+
+public class ExchangeRateController {
+
+    // параметры для запроса
+    public Date start_at { get; set; } // период ОТ
+    public Date end_at { get; set; } // период ДО
+    public String base { get; set; } // базовая валюта
+
+    // разбор примера для динамических таблиц
+    public list<sobject> objectforquery { get; set; } //
+    public list<string> fieldapiname { get; set; } //
+    public set<string> flds { get; set; }
+    public string forquery;
+    public String val { get; set; }
+
+
+    public ExchangeRateController() {
+
+        val = 'Exchange_Rate__c'; // наш объект
+
+        // для теста берем начало отсчета месяц назад
+        start_at = Date.today().addDays(-7);
+        // и берем период за N дней
+        end_at = Date.today();
+        // стартовая базовая валюта как по условию
+
+        if (base == null) getBaseCurrencyPicklist(); // GBP is default
+
+        createquery(); //
+
+    }
+
+
+    public Integer createquery() {
+
+        String obj = val;
+        Map<String, Schema.SObjectType> gd = Schema.getGlobalDescribe();
+
+        Schema.SObjectType sobjType = gd.get(obj);
+        Schema.DescribeSObjectResult describeResult = sobjType.getDescribe();
+        Map<String, Schema.SObjectField> mpConField = describeResult.fields.getMap();
+        this.flds = mpConField.keySet();
+        //System.debug('flds : ' + flds); // flds : {base_currency__c, cad__c, createdbyid, createddate, date__c, ...
+
+        fieldapiname = new list<string>();
+        forquery = null;
+
+        for (String name : flds) {
+            Schema.DescribeFieldResult fldResult = mpConField.get(name).getDescribe();
+            fieldapiname.add(string.valueof(fldResult.getName()));
+            if (forquery == null) {
+                forquery = string.valueof(fldResult.getName());
+            } else {
+                forquery = forquery + ',' + string.valueof(fldResult.getName());
+            }
+        }
+        fieldapiname.sort(); //сейчас в этом списке все поля объекта его можно убрать
+
+        List<String> curOfPickL = ExchangeRateSchedulerFuture.selectOptionsListToStringList(getBaseCurrencyPicklist());
+        //List<String> curOfPickL = selectOptionsListToStringList(getBaseCurrencyPicklist()); //(GBP, CAD, EUR, USD)
+
+        Map<String, String> mapCurAvail = ExchangeRateSchedulerFuture.mapCurAvail();
+        //Map<String, String> mapCurAvail = mapCurrencyAvailability(); //{CAD=CAD__c, EUR=EUR__c, GBP=GBP__c, USD=USD__c}
+
+        // собираем лист полей для вывода на экран
+        fieldapiname = new list<string>();
+        //fieldapiname.add('base_currency__c');
+        fieldapiname.add('date__c');
+        for (String s : mapCurAvail.keySet()) {
+            if (base != s) {
+                fieldapiname.add(mapCurAvail.get(s));
+            }
+        }
+
+//        System.debug('fieldapiname : ' + fieldapiname); // fieldapiname : (Base_Currency__c, CAD__c, CreatedById, ...
+//        System.debug('forquery : ' + forquery); // forquery : Id,OwnerId,IsDeleted,Name,CreatedDate, ...
+//        System.debug('val : ' + val); // Exchange_Rate__c
+
+        String sortingColumn = 'Date__c';    // столбец для сортировки
+        String sortingOrder = 'DESC';        // направление сортировки ASC|DESC
+        String finalquery;
+        finalquery = 'SELECT ' + forquery + ' ';    // абсолютно все поля объекта тут
+        finalquery += 'FROM ' + val + ' ';          // Exchange_Rate__c
+        finalquery += 'WHERE Base_Currency__c = \'' + base + '\' ';             // базовая валюта GBP
+        finalquery += 'ORDER BY ' + sortingColumn + ' ' + sortingOrder + ' ';   // date__c и DESC
+        finalquery += 'LIMIT 10000 ';
+
+//        system.debug('finalquery: ' + finalquery);
+        objectforquery = Database.query(finalquery);
+//        system.debug('objectforquery: ' + objectforquery);
+
+        // важная статья - пример !
+        // https://developer.salesforce.com/forums?id=906F000000090uhIAA
+
+        return 0;
+    }
+
+
+    // получаем Picklist-SelectOption с объекта Base_Currency__c
+    public List<SelectOption> getBaseCurrencyPicklist() {
+        // хорошая статья
+        // https://developer.salesforce.com/blogs/developer-relations/2008/12/using-the-metadata-api-to-retrieve-picklist-values.html
+        List<SelectOption> lso = new List<SelectOption>();
+        Schema.DescribeFieldResult fieldResult = Exchange_Rate__c.Base_Currency__c.getDescribe(); // получаем лист с OBj
+        List<Schema.PicklistEntry> ple = fieldResult.getPicklistValues();
+//        System.debug('ple: ' + ple);
+
+        // получаем валюту по умолчанию
+        String defaultVal;
+        for (Schema.PicklistEntry pv : ple) {
+            if (pv.isDefaultValue()) {
+                defaultVal = pv.getValue();
+            }
+        }
+//        System.debug(defaultVal);
+        if (base == null) base = defaultVal;
+
+        for (Schema.PicklistEntry f : ple) {
+            lso.add(new SelectOption(f.getLabel(), f.getValue()));
+        }
+//        System.debug('lso : ' + lso);
+        return (lso);
+    }
+
+    // кнопка заргужает базу
+    public void loadibgBase() {
+        ExchangeRateSchedulerFuture.eachCurrency();
+    }
+    // кнопка удаляет базу
+    public void deleteBase() {
+        ExchangeRateSchedulerFuture.removeALLdb(val);
+    }
+    // изменение значений в пиклисте
+    public void onchangePickList() {
+        createquery();
+    }
+
+}

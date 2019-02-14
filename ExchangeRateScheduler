@@ -1,0 +1,28 @@
+global class ExchangeRateScheduler implements Schedulable {
+
+    global void execute(SchedulableContext sc) {
+
+        ExchangeRateSchedulerFuture.futureMethod();
+
+    }
+
+}
+
+// http://amitsalesforce.blogspot.com/2017/08/webservice-callout-from-scheduled-apex.html
+// читаю тут: https://www.salesforcetutorial.com/job-schedule-in-salesforce-by-using-apex/
+
+/*
+System.schedule('Test1', '0 0 * * * ?', new ExchangeRateScheduler());
+
+ */
+
+/*
+SchedulableContext sc = null;
+ExchangeRateScheduler tsc = new ExchangeRateScheduler();
+tsc.execute(sc);
+ */
+
+//System.schedule('Test0', '0 0 * * * ?', new ExchangeRateScheduler());
+//System.schedule('Test15', '0 15 * * * ?', new ExchangeRateScheduler());
+//System.schedule('Test30', '0 30 * * * ?', new ExchangeRateScheduler());
+//System.schedule('Test45', '0 45 * * * ?', new ExchangeRateScheduler());

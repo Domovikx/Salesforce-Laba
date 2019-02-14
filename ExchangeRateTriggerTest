@@ -1,0 +1,24 @@
+@isTest
+private class ExchangeRateTriggerTest {
+    
+    @isTest static void beforeUpdateTest1(){
+        
+        insert new Exchange_Rate__c(Base_Currency__c = 'CAD'); 
+        insert new Exchange_Rate__c(Base_Currency__c = 'CAD'); 
+        
+        SObject asd = [SELECT Id, Date__c, Base_Currency__c FROM Exchange_Rate__c LIMIT 1];
+        Id i = asd.Id;
+        update new Exchange_Rate__c(Id = i, Base_Currency__c = 'CAD');                
+    }
+    
+    @isTest static void beforeUpdateTest2(){
+        
+        insert new Exchange_Rate__c(Base_Currency__c = 'CAD');  
+        insert new Exchange_Rate__c(Base_Currency__c = 'GBP'); 
+        
+        SObject asd = [SELECT Id, Date__c, Base_Currency__c FROM Exchange_Rate__c LIMIT 1];
+        Id i = asd.Id;
+        update new Exchange_Rate__c(Id = i, Base_Currency__c = 'GBP');                
+    }
+    
+}

@@ -1,0 +1,12 @@
+@isTest
+public class ExchangeRateSchedulerTest {
+    
+    @isTest static void executeTest(){
+        
+        SchedulableContext sc = null;
+        ExchangeRateScheduler tsc = new ExchangeRateScheduler();
+        tsc.execute(sc);
+         
+    }  
+    
+}

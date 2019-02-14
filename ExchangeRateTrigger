@@ -1,0 +1,109 @@
+trigger ExchangeRateTrigger on Exchange_Rate__c (before update) {
+
+//    System.debug('Trigger');
+//    if (Trigger.isInsert) {
+//        System.debug('Trigger isAfter isInsert');
+
+//        Map<Id, SObject> newMap = Trigger.newMap;
+//        System.debug('newMap: ' + newMap);
+
+//    }
+
+
+    if (Trigger.isBefore) {
+        if (Trigger.isUpdate) {
+            System.debug('--- Trigger ---------------------------------------------------');
+            System.debug('Trigger isBefore isUpdate');
+
+            List<SObject> oldSObjects = Trigger.old;
+            SObject oldSObject = oldSObjects[0];
+            String oldBaseCurrency = (String) oldSObject.get('Base_Currency__c');
+            Date oldDate = (Date) oldSObject.get('Date__c');
+            Id oldId = (Id) oldSObject.get('Id');
+
+
+            List<SObject> currentSObjects = Trigger.new;
+            // Это наш главный SObject в котором мы будем делать все изменения
+            // изменения в нем приводят к изменениям на экране нашего текущего объекта
+            SObject currentSObject = currentSObjects[0];
+            String newBaseCurrency = (String) currentSObject.get('Base_Currency__c');
+
+            // находим запись в БД с нужной валютой для замены данных
+            // собираем запрос и получаем SObject - recordToChange
+            String query;
+            // String baseCurrency = newBaseCurrency;
+//            System.debug('newBaseCurrency : ' + newBaseCurrency);
+            String dateC = String.valueOf(oldDate);
+            String strAPIcurrency = ExchangeRateSchedulerFuture.strAPIcurrency();
+
+            // поиск записи для замены - recordToChange
+            query = 'SELECT Id, Date__c, Base_Currency__c, ' + strAPIcurrency + ' ';
+            query += 'FROM Exchange_Rate__c ';
+            query += 'WHERE Date__c = ' + dateC + ' ';
+            query += 'AND Base_Currency__c = \'' + newBaseCurrency + '\' ';
+            query += 'LIMIT 1';
+//            System.debug('trig: ' + query);
+            List<Exchange_Rate__c> listERtoChange = Database.query(query);
+//            System.debug('trig: ' + listERtoChange);
+            Exchange_Rate__c recordToChange = listERtoChange[0];
+//            System.debug('recordToChange : ' + recordToChange);
+            Id newId = (Id) recordToChange.get('Id');
+
+
+            // находим запись в БД с нужной валютой для замены данных
+            // String baseCurrency = oldBaseCurrency;
+//            System.debug('oldBaseCurrency : ' + oldBaseCurrency);
+            query = 'SELECT Id, Date__c, Base_Currency__c, ' + strAPIcurrency + ' ';
+            query += 'FROM Exchange_Rate__c ';
+            query += 'WHERE Date__c = ' + dateC + ' ';
+            query += 'AND Base_Currency__c = \'' + oldBaseCurrency + '\' ';
+            query += 'LIMIT 1';
+            List<Exchange_Rate__c> listERold = Database.query(query);
+            Exchange_Rate__c recordOld = listERold[0];
+//            System.debug('recordOld : ' + recordOld);
+
+//            System.debug('oldId: ' + oldId);
+//            System.debug('newId: ' + newId);
+            If (oldId != newId) {
+                List<String> listAPIcurrency = ExchangeRateSchedulerFuture.listAPIcurrency();
+
+                // Изменяем данные текущей валюты
+                for (String s : listAPIcurrency) {
+                    Object a = (recordToChange.get(s) != null) ? recordToChange.get(s) : 0;
+                    currentSObject.put(s, a);
+                }
+
+//            // создаем новую запись
+                Exchange_Rate__c erOld = new Exchange_Rate__c();
+                erOld.Date__c = oldDate;
+                erOld.Base_Currency__c = oldBaseCurrency;
+                for (String s : listAPIcurrency) {
+                    // собираем значения валют
+                    Object a = (recordOld.get(s) != null) ? recordOld.get(s) : 0;
+                    erOld.put(s, a);
+                }
+//            System.debug(erOld);
+                insert erOld;
+                System.debug('Trigger');
+                ExchangeRateSchedulerFuture.deleteRecordById(newId, 'Exchange_Rate__c');
+            }
+
+
+        }
+
+
+    }
+
+
+}
+
+
+// ExchangeRateController er = new ExchangeRateController();
+// er.loadibgBase();
+// er.deleteBase();
+
+
+// https://www.tutorialspoint.com/apex/apex_debugging.htm
+
+// похоже вот это моя тема:
+// https://developer.salesforce.com/forums/?id=906F00000008xhoIAA

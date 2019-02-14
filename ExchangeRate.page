@@ -1,0 +1,32 @@
+<apex:page docType="HTML-5.0" controller="ExchangeRateController">
+    <apex:form id="form">
+
+        <apex:pageBlock title="Динамический блок" id="pgBlock">
+            <!-- Статья которой спасибо !!!
+            https://developer.salesforce.com/forums?id=906F000000090uhIAA -->
+
+            <!-- пиклист -->
+            <apex:selectList id="countries" value="{!base}"
+                             size="1" required="true">
+                <apex:selectOptions value="{!baseCurrencyPicklist}"/>
+                <apex:actionSupport event="onchange"
+                                    action="{!onchangePickList}"
+                                    rerender="pgBlock"/>
+            </apex:selectList>
+
+
+            <!-- таблица валют -->
+            <apex:pageBlockTable value="{!objectforquery}" var="objs" title="Currency Rate Table">
+                <apex:repeat value="{!fieldapiname}" var="apis">
+                    <apex:column value="{!objs[apis]}"/>
+                </apex:repeat>
+            </apex:pageBlockTable>
+        </apex:pageBlock>
+
+        <!-- Временные кнопки обновления и удаления базы -->
+        <apex:commandButton value="Get data in db" action="{!loadibgBase}" oncomplete="location.reload();"/>
+        <apex:commandButton value="Delete all data" action="{!deleteBase}" oncomplete="location.reload();"/>
+
+
+    </apex:form>
+</apex:page>

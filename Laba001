@@ -1,0 +1,147 @@
+/**
+ * Created by admin on 12/20/18.
+ */
+
+public class ExchangeRateController {
+
+    public Double GBP { get; set; } // наша базовая валюта по умолчанию
+    public Double EUR { get; set; }
+    public Double CAD { get; set; }
+    public Double USD { get; set; }
+
+    public Date aDate { get; set; } // поле дата занято
+
+    // параметры для запроса
+    public String start_at { get; set; } // период ОТ
+    public String end_at { get; set; } // период ДО
+
+    public String base { get; set; } // базовая валюта
+
+    public String symbols { get; set; } // конкретные валюты
+
+
+    public Integer MyLinkRequest() {
+
+        // временно тестирую перевод даты в строку и обратно
+        Date data1test = Date.valueOf('2018-12-17'); // строка в дату
+        Date data2test = Date.valueOf('2018-12-21');
+
+        start_at = String.valueOf(data1test); // строка в дату
+        end_at = String.valueOf(data2test);
+
+        base = 'GBP';
+        symbols = 'CAD,USD,EUR';
+
+        // собираю ссылку для запроса
+        String linkRequest = 'https://api.exchangeratesapi.io/'; // начальный адрес
+        linkRequest += 'history?'; // запрос по истории
+        linkRequest += '&start_at=' + start_at; // дата начальная
+        linkRequest += '&end_at=' + end_at; // дата конечная, возможно сделаю today
+        linkRequest += '&base=' + base; // базовая валюта
+        linkRequest += '&symbols=' + symbols; // выбор по указанным валютам
+
+        System.debug('StartAddress : ' + linkRequest);
+        // https://api.exchangeratesapi.io/history?&start_at=2018-12-17&end_at=2018-12-21&base=GBP&symbols=CAD,USD,EUR
+
+        Http http = new Http();
+        HttpRequest request = new HttpRequest();
+        request.setEndpoint(linkRequest);
+        request.setMethod('GET');
+        HttpResponse response = http.send(request);
+        System.debug('getBody : ' + response.getBody()); // проверяем JSON который к нам пришел
+
+/*
+        if (response.getStatusCode() == 200) {
+
+            Map<String, Object> results = (Map<String, Object>) JSON.deserializeUntyped(response.getBody());
+            // Map<String, Object> rates = (Map<String, Object>) request.get('rates');
+
+            List<Object> animals = (List<Object>) results.get('animals');
+            System.debug('Received the following animals:');
+            for (Object animal: animals) {
+                System.debug(animal);
+            }
+        }
+
+/*
+        string viewPersonValue = '{"name":"John","age":30,"cars":{"car1":"Ford","car2":"BMW","car3":"Fiat"}}';
+        Map<String, Object> meta = (Map<String, Object>) JSON.deserializeUntyped(viewPersonValue);
+        Map<String, Object> carMap = (Map<String, Object>) meta.get('cars');
+        system.debug(meta.get('name'));
+        system.debug(meta.get('age'));
+        system.debug(carMap.get('car1'));
+        system.debug(carMap.get('car2'));
+        system.debug(carMap.get('car3'));
+*/
+
+        // Map<String, Object> meta = (Map<String, Object>) JSON.deserializeUntyped();
+
+        return (0);
+    }
+
+}
+
+
+/////////////////////////////// test
+ExchangeRateController test2 = new ExchangeRateController();
+System.debug(test2.MyHttpResponse());
+
+
+
+
+*********************************************************************
+
+public class CurrencyRequest {
+
+    public Date aDate { get; set; }
+
+    public Map<String, Double> rates { get; set; }
+
+    public String testResponse() {
+        return '{"date":"2018-12-21","rates":{"PHP":60.546,"HUF":321.97,"SGD":1.5641,"CZK":25.855,"RUB":78.2103,"ILS":4.3045,"JPY":126.98,"DKK":7.467,"CAD":1.5459,"MYR":4.7608,"AUD":1.6081,"THB":37.267,"TRY":6.0546,"NOK":9.9428,"MXN":22.7547,"CNY":7.8825,"KRW":1282.71,"GBP":0.90215,"RON":4.6389,"HKD":8.9368,"INR":80.04,"CHF":1.1312,"HRK":7.4216,"BRL":4.4099,"NZD":1.6925,"PLN":4.2851,"BGN":1.9558,"IDR":16696.34,"ISK":134.1,"USD":1.1414,"SEK":10.2733,"ZAR":16.4753},"base":"EUR"}';
+
+    }
+
+}
+
+*********************************************************************
+
+CurrencyRequest test = new CurrencyRequest();
+
+test = (CurrencyRequest)JSON.deserialize(test.testResponse(), CurrencyRequest.class);
+System.debug(test.rates);
+System.debug(test.rates.get('RUB'));
+
+
+*********************************************************************
+*********************************************************************
+
+
+string viewPersonValue = '{"name":"John","age":30,"cars":{"car1":"Ford","car2":"BMW","car3":"Fiat"}}';
+Map<String, Object> meta = (Map<String, Object>) JSON.deserializeUntyped(viewPersonValue);
+Map<String, Object> carMap = (Map<String, Object>) meta.get('cars');
+system.debug(meta.get('name'));
+system.debug(meta.get('age'));
+system.debug(carMap.get('car1'));
+system.debug(carMap.get('car2'));
+system.debug(carMap.get('car3'));
+
+
+*********************************************************************
+*********************************************************************
+
+
+public class Car {
+    public String make;
+    public String year;
+}
+
+public void parse() {        
+    Car c = (Car)JSON.deserializeStrict( '{"make":"SFDC","year":"2020"}', Car.class);
+    System.assertEquals(c.make, 'SFDC');
+    System.assertEquals(c.year, '2020');
+}
+
+*********************************************************************
+
+https://api.exchangeratesapi.io/history?base=GBP&start_at=2018-12-17&end_at=2018-12-21&symbols=CAD,USD,EUR

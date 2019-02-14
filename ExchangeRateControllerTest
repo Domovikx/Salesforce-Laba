@@ -1,0 +1,30 @@
+@IsTest 
+private class ExchangeRateControllerTest {
+    
+    @isTest static void testVariables() {
+        System.debug('sd : ExchangeRateControllerTest'); 
+        ExchangeRateController er = new ExchangeRateController();
+        
+        er.base = 'GBP';
+        er.start_at = Date.today();
+        er.end_at = Date.today();
+        er.val = 'Exchange_Rate__c';
+      
+    }
+        
+    @isTest static void loadibgBaseTest(){
+        ExchangeRateController er = new ExchangeRateController();        
+        er.loadibgBase(); 
+    } 
+    
+        @isTest static void deleteBaseTest(){
+        ExchangeRateController er = new ExchangeRateController();        
+        er.deleteBase();
+    } 
+    
+        @isTest static void onchangePickListTest(){
+        ExchangeRateController er = new ExchangeRateController(); 
+        er.onchangePickList();
+    } 
+    
+}

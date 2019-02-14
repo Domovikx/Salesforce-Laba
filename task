@@ -1,0 +1,106 @@
+https://docs.google.com/document/d/17Ju8-09hPMDDx0y2I8HH5Evk-YLtADAT81ATgDXGS28/edit
+
+Exchange Rate Application
+
+I need an application which creates records with the currency exchange rates every day at 12 PM.
+
+For now, we are working with the next currencies: CAD, USD, EUR, but in the near future we want to be able to add more currencies without updating the code.
+Our currency is GBP so the exchange rates should be based on this currency.
+Also we want to be able to change base currency on the record and then all exchange rates should be updated by the new base currency.
+So in this way code should be flexible. 
+Examples of Exchange Rate APIs:
+
+
+Заявка на обменный курс
+
+Мне нужно приложение, которое создает записи с курсами валют каждый день в 12 часов.
+
+На данный момент мы работаем со следующими валютами: CAD, USD, EUR, но в ближайшем будущем мы хотим иметь возможность добавлять больше валют без обновления кода.
+Наша валюта - GBP, поэтому обменные курсы должны основываться на этой валюте.
+Также мы хотим иметь возможность изменять базовую валюту в записи, и тогда все обменные курсы должны обновляться на новую базовую валюту.
+Таким образом, код должен быть гибким.
+Примеры API обменного курса:
+
+https://exchangeratesapi.io/
+https://fixer.io/ 
+
+also you can choose any other API
+To understand what currencies we need check fields on the Exchange Rate  object.
+
+Также вы можете выбрать любой другой API
+Чтобы понять, какие валюты нам нужны, проверьте поля на объекте Курс обмена.
+
+
+Notes:
+If API service was not accessible and records for a few days were not created, in the next successfully connect to the API, records for the all skipped days should be created.
+
+Примечания:
+Если служба API была недоступна и записи в течение нескольких дней не создавались, то при следующем успешном подключении к API должны быть созданы записи для всех пропущенных дней.
+
+
+APIs API key should be stored in the Custom Metadata 
+API API ключ API должен храниться в пользовательских метаданных
+
+Data Model:
+
+Exchange Rate (new Object)
+Fields : 
+USD
+Label: USD
+API name: USD__c
+Type: Currency (14,4)
+
+CAD
+Label: CAD
+API name: CAD__c
+Type: Currency (14,4)
+
+EUR
+Label: EUR
+API name: EUR__c
+Type: Currency (14,4)
+
+
+Base Currency
+Label: Base Currency
+API name: BaseCurrency__c
+Type: Picklist
+Picklist values: CAD, EUR, USD, GBP
+Default Value: GBP
+
+Date
+Label: Date
+API name: Date__c
+Type: Date
+
+
+Also we want to have a button on the list view which will change Base Currency on the selected currency.
+Также мы хотим иметь кнопку в виде списка, которая будет изменять базовую валюту на выбранной валюте.
+
+
+Material to learn:
+!!!JSON deserialization by wrapper class:!!!
+https://developer.salesforce.com/forums/?id=9060G000000IARkQAO 
+https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_class_System_Json.htm 
+Schema class - https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_methods_system_schema.htm 
+Batch class - https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_batch_interface.htm
+Triggers - https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_class_System_Trigger.htm#
+Apex Scheduler - 
+https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_scheduler.htm 
+Http Request -
+https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_restful_http_httprequest.htm 
+Remote Site Settings - 
+https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts_remote_site_settings.htm 
+
+Trailheads:
+https://trailhead.salesforce.com/en/content/learn/modules/asynchronous_apex/async_apex_scheduled 
+https://trailhead.salesforce.com/en/content/learn/modules/asynchronous_apex 
+https://trailhead.salesforce.com/en/content/learn/modules/apex_integration_services
+https://trailhead.salesforce.com/en/content/learn/modules/apex_triggers
+
+
+
+Programs to help:
+Postman - https://www.getpostman.com/ 
+Insomnia  -  https://insomnia.rest/download/ 
+

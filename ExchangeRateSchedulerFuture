@@ -1,0 +1,325 @@
+/**
+ * Created by admin on 1/17/19.
+ */
+
+public class ExchangeRateSchedulerFuture {
+
+    @future(callout=true)
+    public static void futureMethod() {
+        eachCurrency();
+    }
+
+    public static Date startAt() {
+        ExchangeRateController erc = new ExchangeRateController();
+        Date startAt = erc.start_at;
+        //Date startAt = Date.today().addDays(-5);
+//        System.debug('startAt: ' + startAt);
+        return startAt;
+    }
+
+    public static List<String> currencyPicklist() {
+        // DEBUG|(GBP, CAD, EUR, USD)
+        // сделаем лист с валютами из пиклиста
+        // первую валюту сделаем валютой по умолчанию для удобства
+        // эти валюты надо запрашивать и добавлять в базу
+
+        Schema.DescribeFieldResult fieldResult = Exchange_Rate__c.Base_Currency__c.getDescribe(); // получаем лист с OBj
+        List<Schema.PicklistEntry> ple = fieldResult.getPicklistValues();
+//        System.debug('ple: ' + ple);
+
+        // получим валюту по умолчанию, она станет нашей первой валютой
+        String defaultVal;
+        List<String> listCur = new List<String>();
+        for (Schema.PicklistEntry pv : ple) {
+            if (pv.isDefaultValue()) {
+                defaultVal = pv.getValue(); // базовая валюта
+            } else {
+                listCur.add(pv.getValue()); // все остальные валюты
+            }
+        }
+        listCur.sort();
+
+//        System.debug(defaultVal); // валюта по умолчанию
+//        System.debug(listCur); // все остальные валюты
+
+        List<String> listAll = new List<String>();
+        listAll.add(defaultVal);
+        listAll.addAll(listCur);
+
+        //System.debug(listAll);
+        return (listAll);
+    }
+
+
+    public static Map<String, String> mapLabelApi() {
+        //{Base Currency=Base_Currency__c, CAD=CAD__c, Created By ID=CreatedById, Created Date=CreatedDate,
+        String obj = 'Exchange_Rate__c';
+        Map<String, Schema.SObjectType> gd = Schema.getGlobalDescribe();
+
+        Schema.SObjectType sobjType = gd.get(obj);
+        Schema.DescribeSObjectResult describeResult = sobjType.getDescribe();
+
+        Map<String, Schema.SObjectField> mapSObject = describeResult.fields.getMap();
+
+        List<String> listLabel = new List<String>();
+        Map<String, String> mapLabelApiTemp = new Map<String, String>();
+        for (String s : mapSObject.keySet()) {
+            String label = mapSObject.get(s).getDescribe().getLabel();
+            String api = mapSObject.get(s).getDescribe().getName();
+            mapLabelApiTemp.put(label, api);
+        }
+
+        //System.debug(mapLabelApiTemp);
+        return mapLabelApiTemp;
+    }
+
+
+    public static Map<String, String> mapCurAvail() {
+//      {CAD=CAD__c, EUR=EUR__c, USD=USD__c}
+        // эти валюты с этими API доступны в объекте
+        // эти данные для выаода на экран
+        Map<String, String> mapLabelApi = mapLabelApi();
+        List<String> currencyPicklist = currencyPicklist();
+
+        Map<String, String> mapCurAvailTemp = new Map<String, String>();
+
+        for (String cur : currencyPicklist) {
+            for (String s : mapLabelApi.keySet()) {
+                if (cur == s) {
+                    mapCurAvailTemp.put(s, mapLabelApi.get(s));
+                    break;
+                }
+            }
+        }
+        //System.debug(mapCurAvailTemp);
+        return mapCurAvailTemp;
+    }
+
+    public static List<String> listAPIcurrency() {
+        Map<String, String> mapCurAvail = mapCurAvail();
+        List<String> listAPIcurrency = new List<String>();
+        for (String s : mapCurAvail.keySet()) {
+            listAPIcurrency.add(mapCurAvail.get(s));
+        }
+        listAPIcurrency.sort();
+        return listAPIcurrency;
+    }
+
+    public static String strAPIcurrency() {
+        List<String> aList = listAPIcurrency();
+        String strAPIcurrency = string.join(aList, ', ');
+        return strAPIcurrency;
+    }
+
+    public static List<Exchange_Rate__c> eachCurrency() {
+
+        List<Exchange_Rate__c> allRates = new List<Exchange_Rate__c>();
+
+        List<String> currencyPicklist = currencyPicklist();
+
+        // Делаем запросы по всем базовым валютам
+        // и складываем их в один список
+        for (String s : currencyPicklist) {
+//            System.debug('   eachCurrency   ');
+//            System.debug('s : ' + s);
+            allRates.addAll(oneCurrencyRequest(s));
+        }
+
+//        System.debug(allRates);
+        //System.debug('Для проверки даты вручную - https://api.exchangeratesapi.io/latest');
+        insert allRates; // добавляем весь список валют в ДБ
+        return allRates;
+    }
+
+
+    // подготовка запроса по одной конкретной базовой валюте
+    public static List<Exchange_Rate__c> oneCurrencyRequest(String baseCurrency) {
+
+        List<Exchange_Rate__c> rates = new List<Exchange_Rate__c>();
+
+        Map<String, String> mapCurAvail = mapCurAvail();
+
+        // исключаем базовую валюту из нашего запроса значений валют
+        List<String> curList = new List<String>();
+        for (String s : mapCurAvail.keySet()) {
+            if (s != baseCurrency) {
+                curList.add(s);
+            }
+        }
+        curList.sort();
+
+        // валюты которые остались после исключения базовой
+        String latestCurrency = listToString(curList); //'CAD,USD,EUR';
+
+        // *************************************************************************
+        // Требуется найти последнюю дату наличия валюты
+        // получим последнюю дату в по выбранной валюте,
+        // это важный момент, поэтому делаем отдельный метод
+        Date startDate = lastDateCurrency(baseCurrency);
+        if (startDate == Date.today()) {
+            return null;
+        }
+        if (startDate > startAt()) {
+            startDate = startDate.addDays(1);
+        }
+        // Date startDate = start_at; //Date.valueOf('2018-12-15');
+
+        // в любом случае последняя дата - сегодня
+        Date endDate = Date.today(); //Date.valueOf('2018-12-31');
+
+        rates.addAll(requestToBank(baseCurrency, latestCurrency, startDate, endDate));
+//        System.debug(rates);
+
+        //insert rates; // отключить позднее, вначале надо собрать весь лист целиком
+        return rates;
+    }
+
+
+    public static List<Exchange_Rate__c> requestToBank(String baseCurrency, String latestCurrency, Date startDate, Date endDate) {
+
+        // передаем данные и получаем JSON body
+        String responseBody = responseBody(baseCurrency, latestCurrency, startDate, endDate);
+
+        // **********************************************************************
+        // Делаем десерелизацию
+        Map<String, Object> mapMain = (Map<String, Object>) JSON.deserializeUntyped(responseBody);
+        Map<String, Object> mapRates = (Map<String, Object>) mapMain.get('rates');
+//        System.debug(mapRates);
+
+        // **********************************************************************
+
+        // пустышки
+        List<Exchange_Rate__c> rates = new List<Exchange_Rate__c>();
+        Map<String, Object> mapNew = new Map<String, Object>();
+
+        // вспомогательные данные
+        List<String> listCurrency = new List<String>(strToList(latestCurrency)); // CAD USD EUR
+//        System.debug('listCurrency: ' + listCurrency);
+        Map<String, String> mapCur = mapCurAvail(); // CAD=CAD__c, USD=USD__c...
+
+        for (String s : mapRates.keySet()) { // 2018-12-15, 2018-12-16...
+
+            mapNew = (Map<String, Object>) mapRates.get(s); // объект с валютами по дате
+//            System.debug('mapNew: ' + mapNew);
+
+            Exchange_Rate__c er = new Exchange_Rate__c();
+            er.Date__c = Date.valueOf(s); // Приводим к формату даты
+
+//            System.debug('Date__c : ' + er.Date__c);
+            er.Base_Currency__c = baseCurrency; //указываем базовую валюту
+
+            for (String cur : listCurrency) {
+                String objAPIname = mapCur.get(cur);
+                Decimal valueCurrency = (Decimal) mapNew.get(cur);
+//                System.debug(objAPIname);
+//                System.debug(valueCurrency);
+                er.put(objAPIname, valueCurrency);
+//                System.debug('er : ' + er);
+//                System.debug('');
+            }
+//            System.debug(er);
+            rates.add(er);
+        }
+        rates.sort(); // сортируем наш лист объектов Exchange_Rate__c
+
+//        System.debug('rates: ' + rates);
+        return rates;
+    }
+
+
+    public static String responseBody(String baseCurrency, String latestCurrency, Date startDate, Date endDate) {
+
+        // пишем запрос
+        String linkRequest = 'https://api.exchangeratesapi.io/'; // начальный адрес
+        linkRequest += 'history?'; // запрос по истории
+        linkRequest += '&start_at=' + String.valueOf(startDate); // дата начальная
+        linkRequest += '&end_at=' + String.valueOf(endDate); // дата конечная, возможно сделаю today
+        linkRequest += '&base=' + baseCurrency; // GBP
+        linkRequest += '&symbols=' + latestCurrency; // CAD,USD,EUR
+
+//        System.debug('linkRequest : ' + linkRequest);
+        // https://api.exchangeratesapi.io/history?&start_at=2018-12-17&end_at=2018-12-21&base=GBP&symbols=CAD,USD,EUR
+
+        Http http = new Http();
+        HttpRequest request = new HttpRequest();
+        request.setEndpoint(linkRequest);
+        request.setMethod('GET');
+        HttpResponse response = http.send(request);
+        String responseBody = response.getBody();
+//        System.debug('response.getBody() : ' + responseBody); // проверяем JSON который к нам пришел
+
+        return responseBody;
+    }
+
+
+    public static Date lastDateCurrency(String baseCurrency) {
+        // надо получить посделную дату для конкретной валюты
+
+        String sortingColumn = 'Date__c';    // столбец для сортировки
+        String sortingOrder = 'DESC';        // направление сортировки ASC|DESC
+        String query;
+        query = 'SELECT Id, Date__c, Base_Currency__c ';
+        query += 'FROM Exchange_Rate__c ';
+        query += 'WHERE Base_Currency__c = \'' + baseCurrency + '\' ';
+        query += 'ORDER BY ' + sortingColumn + ' ' + sortingOrder + ' ';
+        query += 'LIMIT 1';
+        //System.debug('query : ' + query);
+        List<Exchange_Rate__c> listOBJ = Database.query(query);
+//        System.debug('baseCurrency: ' + baseCurrency);
+//        System.debug('listOBJ.size(): ' + listOBJ.size()); // Покажи размер листа
+
+        Date lastDate;
+        if (listOBJ.isEmpty()) { // Если пустой лист
+            lastDate = startAt(); // тут скорее всего придется менять, старт - другая дата
+        } else {
+            lastDate = listOBJ.get(0).Date__C;
+        }
+//        System.debug('lastDate: ' + lastDate);
+
+        return lastDate;
+    }
+
+
+    public static List<String> strToList(String str) {
+        List<String> listNew = new List<String>();
+        listNew = str.split(',');
+        return listNew;
+    }
+    public static String listToString(List<String> aList) {
+        //aList.remove(null);
+//        System.debug(aList);
+        String allstring = string.join(aList, ',');
+        return allstring;
+    }
+    public static List<String> selectOptionsListToStringList(List<SelectOption> selectOptions) {
+        List<String> stringList = new List<String>();
+        for (SelectOption so: selectOptions) {
+            stringList.add(so.getValue());
+        }
+        return stringList;
+    }
+
+    public static void deleteRecordById(Id removeId, String fromObject) {
+//        Id removeId;
+//        String fromObject;
+//        fromObject = 'Exchange_Rate__c';
+//        removeId = 'a0B6F00001QDl6kUAD';
+        String query = 'SELECT Id ';
+        query += 'FROM ' + fromObject + ' ';
+        query += 'WHERE Id = \'' + removeId + '\' ';
+        query += 'LIMIT 1';
+        List<SObject> listToRemove = Database.query(query);
+//        System.debug(listToRemove);
+        delete listToRemove;
+    }
+
+    public static void removeALLdb(String objString) {
+        String query = 'SELECT Id FROM ' + objString;
+//        System.debug(query);
+        List<SObject> listDel = Database.query(query);
+//        System.debug(listDel);
+        delete listDel;
+    }
+
+
+}

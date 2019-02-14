@@ -1,0 +1,89 @@
+@IsTest
+private class ExchangeRateSchedulerFutureTest {
+    
+    @IsTest static void loadibgBaseTest() {
+        ExchangeRateController er = new ExchangeRateController();
+        er.loadibgBase();
+    }
+    
+    @IsTest static void deleteBaseTest() {
+        ExchangeRateController er = new ExchangeRateController();
+        er.deleteBase();
+    }    
+    
+    @IsTest static void deleteBaseTest2() {
+        ExchangeRateSchedulerFuture.removeALLdb('Exchange_Rate__c');
+    }       
+    
+    @IsTest static void eachCurrencyTest2() {
+        ExchangeRateSchedulerFuture.eachCurrency();
+    }       
+    
+    
+    @IsTest static void futureMethodTest() {
+        ExchangeRateSchedulerFuture.futureMethod();        
+    }
+    
+    @IsTest static void  startAtTest(){
+        //ExchangeRateController erc = new ExchangeRateController();
+        // erc.start_at = Date.today();
+        ExchangeRateSchedulerFuture.startAt();
+    }
+    
+    @IsTest static void  listAPIcurrencyTest(){
+        ExchangeRateSchedulerFuture.listAPIcurrency();
+    }
+    
+    @IsTest static void  strAPIcurrencyTest(){
+        ExchangeRateSchedulerFuture.strAPIcurrency();
+    }
+    
+    @IsTest static void  requestToBankTest(){
+        String baseCurrency = 'GBP'; 
+        String latestCurrency = 'CAD,USD,EUR'; 
+        Date startDate = Date.today().addDays(-5); 
+        Date endDate = Date.today();
+        
+        ExchangeRateSchedulerFuture.requestToBank(baseCurrency, latestCurrency, startDate, endDate);
+        
+        startDate = Date.today();
+        ExchangeRateSchedulerFuture.requestToBank(baseCurrency, latestCurrency, startDate, endDate);
+    }
+    
+    @IsTest static void  strToListTest(){
+        String str = 'CAD,USD,EUR';
+        ExchangeRateSchedulerFuture.strToList(str);
+    }
+    
+    @IsTest static void  deleteRecordByIdTest(){        
+        Exchange_Rate__c er = new Exchange_Rate__c();    
+        insert er;
+        Id removeId = er.Id;
+        String fromObject = 'Exchange_Rate__c';
+        ExchangeRateSchedulerFuture.deleteRecordById(removeId, fromObject);        
+    }
+    
+    @IsTest static void  selectOptionsListToStringListTest(){         
+        List<SelectOption> selectOptions = new List<SelectOption>();
+        selectOptions.add(new SelectOption('US','US'));
+        selectOptions.add(new SelectOption('CANADA','Canada'));
+        selectOptions.add(new SelectOption('MEXICO','Mexico'));
+        ExchangeRateSchedulerFuture.selectOptionsListToStringList(selectOptions); 
+    }      
+    
+    @IsTest static void  deserializeResponseBodyTest(){  
+        String responseBody='"end_at":"2019-01-25","rates":{"2019-01-22":{"CAD":1.7190909091,"USD":1.2902272727,"EUR":1.1363636364},"2019-01-18":{"CAD":1.7173333333,"USD":1.2938439716,"EUR":1.134751773},"2019-01-23":{"CAD":1.7350624334,"USD":1.3033607375,"EUR":1.1466180501},"2019-01-21":{"CAD":1.7119463665,"USD":1.2867060009,"EUR":1.1324643557}},"start_at":"2019-01-18","base":"GBP"';
+        String latestCurrency='CAD,EUR,USD'; 
+        String baseCurrency='GBP';
+        
+        //11:32:22.38 (732643479)|USER_DEBUG|[182]|DEBUG|{"end_at":"2019-01-25","rates":{"2019-01-22":{"CAD":1.7190909091,"USD":1.2902272727,"EUR":1.1363636364},"2019-01-18":{"CAD":1.7173333333,"USD":1.2938439716,"EUR":1.134751773},"2019-01-23":{"CAD":1.7350624334,"USD":1.3033607375,"EUR":1.1466180501},"2019-01-21":{"CAD":1.7119463665,"USD":1.2867060009,"EUR":1.1324643557}},"start_at":"2019-01-18","base":"GBP"}
+        //11:32:22.38 (732668304)|USER_DEBUG|[183]|DEBUG|CAD,EUR,USD
+        //11:32:22.38 (732682785)|USER_DEBUG|[184]|DEBUG|GBP
+        
+        ExchangeRateSchedulerFuture.deserializeResponseBody(responseBody,latestCurrency,baseCurrency);
+    }
+    
+    
+    
+    
+}

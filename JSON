@@ -1,0 +1,32 @@
+String link = '{"end_at":"2018-12-21","rates":{"2018-12-17":{"CAD":1.6897318945,"USD":1.2616531316,"EUR":1.1124707976},"2018-12-19":{"CAD":1.697557519,"USD":1.2627604686,"EUR":1.1071990079},"2018-12-21":{"CAD":1.7135731309,"USD":1.2651998005,"EUR":1.1084631159},"2018-12-20":{"CAD":1.7074223723,"USD":1.2676149887,"EUR":1.1069906459},"2018-12-18":{"CAD":1.6997157666,"USD":1.2681268461,"EUR":1.114640807}},"start_at":"2018-12-17","base":"GBP"}';
+
+Map<String, Object> meta = (Map<String, Object>) JSON.deserializeUntyped(link);
+
+System.debug('-----------');
+System.debug(meta.values());
+System.debug('start_at : ' + meta.get('start_at'));
+System.debug('end_at : ' + meta.get('end_at'));
+System.debug('base : ' + meta.get('base'));
+
+Map<String, Object> ratesMap = (Map<String, Object>) meta.get('rates');
+System.debug('keySet : ' + ratesMap.keySet());
+
+Integer i=0;
+for (String rate : ratesMap.keySet()) {
+    i++;
+    System.debug('rates ' + i +' '+ rate);
+}
+
+
+System.debug(ratesMap.get('2018-12-17'));
+System.debug(ratesMap.get('2018-12-18'));
+System.debug(ratesMap.get('2018-12-19'));
+
+Map<String, Object> dataMap1 = (Map<String, Object>) ratesMap.get('2018-12-17');
+System.debug(dataMap1.get('CAD'));
+System.debug(dataMap1.get('EUR'));
+System.debug(dataMap1.get('USD'));
+
+
+
+******************************************************************
